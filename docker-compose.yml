@@ -28,28 +28,70 @@ services:
       bash -c "chmod 555 entrypoint.sh
       && ./entrypoint.sh"
     ports:
-      - ${APP_PORT:?error}:8000
+      - ${APP_PORT}:${APP_PORT}
     depends_on:
       - db
       - redis
-  pgadmin:
-    image: dpage/pgadmin4
+
+  beat:
+    image: src
     restart: unless-stopped
+    env_file: .env
+    command: celery -A src beat --loglevel=INFO
+    volumes:
+      - .:/app
+    depends_on:
+      - app
+
+  worker:
+    image: src
+    restart: unless-stopped
+    env_file: .env
+    command: celery -A src worker --loglevel=INFO --concurrency=5 --autoscale=1,4
+    volumes:
+      - .:/app
+    depends_on:
+      - beat
+
+
+# MONITORING
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    restart: unless-stopped
+    env_file: .env
     ports:
-      - "8888:80"
-    environment:
-      PGADMIN_DEFAULT_EMAIL: efraim@kavimdigital.com
-      PGADMIN_DEFAULT_PASSWORD: 12345
+      - ${PGADMIN_PORT:-5431}:80
     volumes:
       - ./data/pgadmin:/var/lib/pgadmin
+    depends_on:
+      - db
 
   redis-commander:
     image: rediscommander/redis-commander:latest
+    restart: unless-stopped
     environment:
       - REDIS_HOSTS=local:redis:6379
-#      - READ_ONLY=true
-      - PORT=6363
+      # - READ_ONLY=true
       - HTTP_USER=${REDIS_COMMANDER_USERNAME:?required}
       - HTTP_PASSWORD=${REDIS_COMMANDER_PASSWORD:?required}
     ports:
-      - "6363:6363"
+      - ${REDIS_COMMANDER_PORT:-8081}:8081
+    depends_on:
+      - redis
+
+  flower:
+    image: mher/flower
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379
+#      - CELERY_RESULT_BACKEND=redis://redis
+    ports:
+      - ${FLOWER_PORT:-5555}:5555
+    volumes:
+      - ./data/flower:/data
+    command: celery flower --basic-auth=${FLOWER_CREDENTIALS:?error}
+    depends_on:
+      - worker
+      - redis

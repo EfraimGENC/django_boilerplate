@@ -10,7 +10,7 @@ python3 manage.py migrate
 
 if [ "$BUILD_ENV" = "dev" ]
 then
-  python3 manage.py runserver 0.0.0.0:8000
+  python3 manage.py runserver 0.0.0.0:"$APP_PORT"
 else
   python3 manage.py collectstatic --no-input --clear --settings="${DJANGO_SETTINGS_MODULE}"
   gunicorn --bind 0.0.0.0:8000 src.asgi:application -k uvicorn.workers.UvicornWorker --log-level debug
