@@ -1,0 +1,55 @@
+version: "3.9"
+
+services:
+  redis:
+    image: redis
+    restart: unless-stopped
+
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - ./data/db:/var/lib/postgresql/data
+
+  app:
+    image: src
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - DEBUG=${DEBUG:?error}
+        - BUILD_ENV=${BUILD_ENV:?error}
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - .:/app
+    command: >
+      bash -c "chmod 555 entrypoint.sh
+      && ./entrypoint.sh"
+    ports:
+      - ${APP_PORT:?error}:8000
+    depends_on:
+      - db
+      - redis
+  pgadmin:
+    image: dpage/pgadmin4
+    restart: unless-stopped
+    ports:
+      - "8888:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: efraim@kavimdigital.com
+      PGADMIN_DEFAULT_PASSWORD: 12345
+    volumes:
+      - ./data/pgadmin:/var/lib/pgadmin
+
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+#      - READ_ONLY=true
+      - PORT=6363
+      - HTTP_USER=${REDIS_COMMANDER_USERNAME:?required}
+      - HTTP_PASSWORD=${REDIS_COMMANDER_PASSWORD:?required}
+    ports:
+      - "6363:6363"
