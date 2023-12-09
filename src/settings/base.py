@@ -34,6 +34,7 @@ INSTALLED_APPS = [
     'django.contrib.sites',
 
     # Third Party
+    'rest_framework',
 
 
     # Src Apps
@@ -179,3 +180,22 @@ SITE_ID = 1
 # App Version
 
 APP_VERSION = '0.0.1'
+
+
+# Django REST Framework
+# https://www.django-rest-framework.org/
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.SessionAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+    'DEFAULT_FILTER_BACKENDS': [
+        'rest_framework.filters.OrderingFilter',
+        'rest_framework.filters.SearchFilter',
+        'django_filters.rest_framework.DjangoFilterBackend',
+    ],
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
+    'PAGE_SIZE': 100,
+}
