@@ -86,9 +86,9 @@ services:
     env_file: .env
     environment:
       - CELERY_BROKER_URL=redis://redis:6379
-#      - CELERY_RESULT_BACKEND=redis://redis
+      - CELERY_RESULT_BACKEND=redis://redis:6379
     ports:
-      - ${FLOWER_PORT:-5555}:5555
+      - ${FLOWER_PORT:-5555}:${FLOWER_PORT:-5555}
     volumes:
       - ./data/flower:/data
     command: celery flower --basic-auth=${FLOWER_CREDENTIALS:?error}
